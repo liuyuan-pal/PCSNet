@@ -19,6 +19,9 @@ cu_lib="build/GatherScatterKernel.cu.o
 cc_file="SumGather.cc
          MaxGather.cc
          MaxScatter.cc
+         RepeatScatter.cc
+         IdxsScatter.cc
+         IdxsGather.cc
          ComputePermutationInfo.cc
          ComputePermutationInfo.cpp
          ComputeRepermutationInfo.cc

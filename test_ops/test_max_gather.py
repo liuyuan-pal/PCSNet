@@ -61,10 +61,10 @@ def eval_val(feats, dfeats_gather, lens, begs, cens, sess):
     lens_pl=tf.placeholder(tf.int32,[None])
     dfeats_gather_pl=tf.placeholder(tf.float32,[None,None])
 
-    feats_gather,idxs_gather=max_gather(feats_pl,lens_pl,begs_pl,cens_pl)
+    feats_gather=max_gather(feats_pl,lens_pl,begs_pl,cens_pl)
     dfeats=tf.gradients(feats_gather,feats_pl,dfeats_gather_pl)[0]
 
-    feats_gather_val,idxs_gather_val,dfeats_val=sess.run([feats_gather,idxs_gather,dfeats],feed_dict={
+    feats_gather_val,dfeats_val=sess.run([feats_gather,dfeats],feed_dict={
         feats_pl:feats,
         cens_pl:cens,
         begs_pl:begs,
@@ -72,7 +72,7 @@ def eval_val(feats, dfeats_gather, lens, begs, cens, sess):
         dfeats_gather_pl:dfeats_gather,
     })
 
-    return feats_gather_val,idxs_gather_val,dfeats_val
+    return feats_gather_val,dfeats_val
 
 def test_single(m,f,sess):
     lens = np.random.randint(0, 5, [m])
@@ -85,7 +85,7 @@ def test_single(m,f,sess):
 
     feats_gather,idxs_gather= max_gather_np(feats, lens, begs)
     dfeats = max_scatter_backward(feats, idxs_gather, dfeats_gather, lens, begs)
-    feats_gather_val, idxs_gather_val, dfeats_val = eval_val(feats, dfeats_gather, lens, begs, cens, sess)
+    feats_gather_val, dfeats_val = eval_val(feats, dfeats_gather, lens, begs, cens, sess)
 
     diff_abs = np.abs(feats_gather - feats_gather_val)
     if np.mean(diff_abs) > 1e-5 or np.max(diff_abs) > 1e-4:
@@ -99,22 +99,22 @@ def test_single(m,f,sess):
         print m, f
         exit(0)
 
-    idxs_diff=np.sum(idxs_gather-idxs_gather_val)
-    if idxs_diff>0:
-        xs,ys=np.nonzero(np.not_equal(idxs_gather,idxs_gather_val))
-        error=False
-        for k in xrange(len(xs)):
-            diff_val=feats[begs[xs[k]]+idxs_gather[xs[k],ys[k]],ys[k]]-feats[begs[xs[k]]+idxs_gather_val[xs[k],ys[k]],ys[k]]
-            if abs(diff_val)>1e-5:
-                error=True
-                break
-
-        if error:
-            print 'idxs error!'
-            print m,f
-            exit(0)
-        else:
-            return
+    # idxs_diff=np.sum(idxs_gather-idxs_gather_val)
+    # if idxs_diff>0:
+    #     xs,ys=np.nonzero(np.not_equal(idxs_gather,idxs_gather_val))
+    #     error=False
+    #     for k in xrange(len(xs)):
+    #         diff_val=feats[begs[xs[k]]+idxs_gather[xs[k],ys[k]],ys[k]]-feats[begs[xs[k]]+idxs_gather_val[xs[k],ys[k]],ys[k]]
+    #         if abs(diff_val)>1e-5:
+    #             error=True
+    #             break
+    #
+    #     if error:
+    #         print 'idxs error!'
+    #         print m,f
+    #         exit(0)
+    #     else:
+    #         return
 
 def test():
     config = tf.ConfigProto()
@@ -139,4 +139,4 @@ def test():
         test_single(pn,fd,sess)
 
 if __name__=="__main__":
-    test()
+    test_old()

@@ -8,7 +8,7 @@ from tensorflow.python.framework import ops
 
 @ops.RegisterGradient("SumGather")
 def _sum_gather_gradients(op,dfeats_gather):
-    dfeats=tf.gather(dfeats_gather,op.inputs[3])
+    dfeats=pcs_ops.repeat_scatter(dfeats_gather,op.inputs[1],op.inputs[2],op.inputs[3])
     return [dfeats,None,None,None]
 
 @ops.RegisterGradient("MaxGather")
@@ -16,12 +16,29 @@ def _sum_gather_gradients(op,dfeats_gather,didxs_gather):
     dfeats=pcs_ops.max_scatter(dfeats_gather,op.outputs[1],op.inputs[1],op.inputs[2],op.inputs[3])
     return [dfeats,None,None,None]
 
+@ops.RegisterGradient("RepeatScatter")
+def _sum_gather_gradients(op, dfeats_scatter):
+    dfeats=pcs_ops.sum_gather(dfeats_scatter, op.inputs[1], op.inputs[2], op.inputs[3])
+    return [dfeats,None,None,None]
+
+@ops.RegisterGradient("IdxsScatter")
+def _sum_gather_gradients(op, dfeats_scatter):
+    dfeats=pcs_ops.idxs_gather(dfeats_scatter, op.inputs[1], op.inputs[2])
+    return [dfeats,None,None]
+
+
 def sum_gather(feats,nlens,nbegs,ncens):
     return pcs_ops.sum_gather(feats,nlens,nbegs,ncens)
 
 def max_gather(feats,nlens,nbegs,ncens):
     feats_gather,idxs_gather=pcs_ops.max_gather(feats, nlens, nbegs, ncens)
-    return feats_gather,idxs_gather
+    return feats_gather
+
+def repeat_scatter(feats,lens,begs,cens):
+    return pcs_ops.repeat_scatter(feats,lens,begs,cens)
+
+def idxs_scatter(feats,idxs,lens):
+    return pcs_ops.idxs_scatter(feats,idxs,lens)
 
 def compute_voxel_idx(xyzs,voxel_len):
     return pcs_ops.compute_voxel_index(xyzs, tf.reduce_min(xyzs,axis=0), voxel_len=voxel_len)
@@ -65,3 +82,14 @@ def points_pooling_two_layers(xyzs,feats,labels,voxel_size1,voxel_size2):
     labels = tf.gather(labels, reper_o2p_idxs1)
 
     return [pts1,pts2,pts3],[dpts1,dpts2],feats,labels,[vlens1,vlens2],[vbegs1,vbegs2],[vcens1,vcens2]
+
+
+def search_neighborhood(xyzs,radius):
+    idxs,lens,begs,cens=pcs_ops.search_neighborhood(xyzs,squared_nn_size=radius*radius)
+    return idxs,lens,begs,cens
+
+
+def search_neighborhood_range(xyzs,min_radius,max_radius):
+    idxs,lens,begs,cens=pcs_ops.search_neighborhood_range(xyzs,squared_min_nn_size=min_radius*min_radius,
+                                                          squared_max_nn_size=max_radius*max_radius)
+    return idxs,lens,begs,cens

@@ -109,7 +109,7 @@ void maxGather(
 template<typename FLT_TYPE,typename INT_TYPE>
 __global__ void maxScatterKernel(
         FLT_TYPE *feats,                // [m,f]
-        INT_TYPE *idxs,                 // [m,f]
+        INT_TYPE *idxs,                 // [s,f]
         INT_TYPE *nlens,                // [m]
         INT_TYPE *nbegs,                // [m]
         INT_TYPE m,
@@ -129,7 +129,7 @@ __global__ void maxScatterKernel(
 template<typename FLT_TYPE,typename INT_TYPE>
 void maxScatter(
         FLT_TYPE *feats,                // [m,f]
-        INT_TYPE *idxs,                 // [m,f]
+        INT_TYPE *idxs,                 // [s,f]
         INT_TYPE *nlens,                // [m]
         INT_TYPE *nbegs,                // [m]
         INT_TYPE m,
@@ -148,6 +148,120 @@ void maxScatter(
     gpuErrchk(cudaGetLastError())
 }
 
+
+
+template<typename FLT_TYPE,typename INT_TYPE>
+__global__ void repeatScatterKernel(
+        FLT_TYPE *feats,                // [m,f]
+        INT_TYPE *ncens,                // [s]
+        INT_TYPE s,
+        INT_TYPE f,
+        FLT_TYPE *feats_scatter         // [s,f]
+)
+{
+    int si = threadIdx.x + blockIdx.x*blockDim.x;
+    int fi = threadIdx.y + blockIdx.y*blockDim.y;
+    if(si>=s||fi>=f) return;
+
+    INT_TYPE mi=ncens[si];
+    feats_scatter[si*f+fi]=feats[mi*f+fi];
+};
+
+template<typename FLT_TYPE,typename INT_TYPE>
+void repeatScatter(
+        FLT_TYPE *feats,                // [m,f]
+        INT_TYPE *ncens,                // [s]
+        INT_TYPE s,
+        INT_TYPE f,
+        FLT_TYPE *feats_scatter         // [s,f]
+)
+{
+    int tdim0,tdim1,tdim2,bdim0,bdim1,bdim2;
+    getGPULayout(s,f,1,bdim0,bdim1,bdim2,tdim0,tdim1,tdim2);
+    gpuErrchk(cudaMemset(feats_scatter,0,s*f*sizeof(FLT_TYPE)))
+
+    dim3 block_dim(bdim0,bdim1,bdim2);
+    dim3 thread_dim(tdim0,tdim1,tdim2);
+    repeatScatterKernel<FLT_TYPE,INT_TYPE><<<block_dim,thread_dim>>>(feats,ncens,s,f,feats_scatter);
+    gpuErrchk(cudaGetLastError())
+}
+
+template<typename FLT_TYPE,typename INT_TYPE>
+__global__ void idxsScatterKernel(
+        FLT_TYPE *feats,                // [m,f]
+        INT_TYPE *idxs,                 // [s,f]
+        INT_TYPE s,
+        INT_TYPE f,
+        FLT_TYPE *feats_scatter         // [s,f]
+)
+{
+    int si = threadIdx.x + blockIdx.x*blockDim.x;
+    int fi = threadIdx.y + blockIdx.y*blockDim.y;
+    if(si>=s||fi>=f) return;
+
+    INT_TYPE idx=idxs[si];
+    feats_scatter[si*f+fi]=feats[idx*f+fi];
+};
+
+template<typename FLT_TYPE,typename INT_TYPE>
+void idxsScatter(
+        FLT_TYPE *feats,                // [m,f]
+        INT_TYPE *nidxs,                // [s]
+        INT_TYPE s,
+        INT_TYPE f,
+        FLT_TYPE *feats_scatter         // [s,f]
+)
+{
+    int tdim0,tdim1,tdim2,bdim0,bdim1,bdim2;
+    getGPULayout(s,f,1,bdim0,bdim1,bdim2,tdim0,tdim1,tdim2);
+    gpuErrchk(cudaMemset(feats_scatter,0,s*f*sizeof(FLT_TYPE)))
+
+    dim3 block_dim(bdim0,bdim1,bdim2);
+    dim3 thread_dim(tdim0,tdim1,tdim2);
+    idxsScatterKernel<FLT_TYPE,INT_TYPE><<<block_dim,thread_dim>>>(feats,nidxs,s,f,feats_scatter);
+    gpuErrchk(cudaGetLastError())
+}
+
+template<typename FLT_TYPE,typename INT_TYPE>
+__global__ void idxsGatherKernel(
+        FLT_TYPE *feats,                // [s,f]
+        INT_TYPE *nidxs,                // [s]
+        INT_TYPE s,
+        INT_TYPE f,
+        FLT_TYPE *feats_gather          // [m,f]
+)
+{
+    int si = threadIdx.x + blockIdx.x*blockDim.x;
+    int fi = threadIdx.y + blockIdx.y*blockDim.y;
+    if(si>=s||fi>=f) return;
+
+    INT_TYPE idx=nidxs[si];
+    atomicAdd(&feats_gather[idx*f+fi],feats[si*f+fi]);
+}
+
+template<typename FLT_TYPE,typename INT_TYPE>
+void idxsGather(
+        FLT_TYPE *feats,                // [m,f]
+        INT_TYPE *nidxs,                // [s]
+        INT_TYPE m,
+        INT_TYPE s,
+        INT_TYPE f,
+        FLT_TYPE *feats_gather          // [s,f]
+)
+{
+    int tdim0,tdim1,tdim2,bdim0,bdim1,bdim2;
+    getGPULayout(s,f,1,bdim0,bdim1,bdim2,tdim0,tdim1,tdim2);
+    gpuErrchk(cudaMemset(feats_gather,0,m*f*sizeof(FLT_TYPE)))
+
+    dim3 block_dim(bdim0,bdim1,bdim2);
+    dim3 thread_dim(tdim0,tdim1,tdim2);
+    idxsGatherKernel<FLT_TYPE,INT_TYPE><<<block_dim,thread_dim>>>(feats,nidxs,s,f,feats_gather);
+    gpuErrchk(cudaGetLastError())
+}
+
 template void sumGather<float,int>(float*,int*,int*,int,int,float*);
 template void maxGather<float,int>(float*,int*,int*,int,int,float*,int*);
 template void maxScatter<float,int>(float*,int*,int*,int*,int,int,int,float*);
+template void repeatScatter<float,int>(float*,int*,int,int,float*);
+template void idxsScatter<float,int>(float*,int*,int,int,float*);
+template void idxsGather<float,int>(float*,int*,int,int,int,float*);
