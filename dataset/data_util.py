@@ -1,15 +1,15 @@
-import cPickle
+import pickle
 import numpy as np
 import math
 
 def save_pkl(filename,obj):
     with open(filename,'wb') as f:
-        cPickle.dump(obj,f,protocol=2)
+        pickle.dump(obj,f,protocol=2)
 
 
 def read_pkl(filename):
     with open(filename,'rb') as f:
-        obj=cPickle.load(f)
+        obj=pickle.load(f)
     return obj
 
 def flip(points,axis=0):
@@ -39,7 +39,7 @@ def rotate(xyz,rotation_angle):
 
 def _fetch_subset(all, idxs, subsets=None):
     if subsets is None:
-        subsets=[[] for _ in xrange(len(all))]
+        subsets=[[] for _ in range(len(all))]
 
     for item,subset in zip(all,subsets):
         for idx in idxs:
@@ -170,7 +170,7 @@ def normalize_block(xyzs,rgbs,lbls,block_size,resample=False,
                     jitter_color=False,jitter_val=2.5):
     bn=len(xyzs)
     block_mins=[]
-    for bid in xrange(bn):
+    for bid in range(bn):
         if resample:
             pt_num=len(xyzs[bid])
             random_down_ratio=np.random.uniform(resample_low,resample_high)

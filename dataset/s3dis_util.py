@@ -1,4 +1,7 @@
-from data_util import read_pkl,save_pkl, sample_block, normalize_block
+import sys
+sys.append('.')
+sys.append('..')
+from dataset.data_util import read_pkl,save_pkl, sample_block, normalize_block
 import time
 import os
 import glob
@@ -77,7 +80,7 @@ def raw2pkl(raw_dir, pkl_dir):
         labels[labels>=13]=12  # mark points of stairs as clutter
         save_pkl(os.path.join(pkl_dir, fn), [points, labels[:, 0]])
         f.write('{}\n'.format(fn))
-        print fn
+        print('raw2pkl {} done'.format(fn))
     f.close()
 
 
@@ -101,38 +104,38 @@ def prepare_data(fn,use_rescale,use_swap,use_flip_x,use_flip_y,resample,jitter_c
 
 def prepare_s3dis_train_single_file(pkl_dir, output_dir, fn):
     room_fn=os.path.join(pkl_dir, fn)
-    all_data=[[] for _ in xrange(4)]
+    all_data=[[] for _ in range(4)]
     bg=time.time()
 
     data = prepare_data(room_fn, True, True, False, False, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
     data = prepare_data(room_fn, True, True, True, False, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
     data = prepare_data(room_fn, True, True, False, True, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
     data = prepare_data(room_fn, True, True, True, True, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
 
     data = prepare_data(room_fn, True, False, False, False, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
     data = prepare_data(room_fn, True, False, True, False, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
     data = prepare_data(room_fn, True, False, False, True, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
     data = prepare_data(room_fn, True, False, True, True, True, True)
-    for t in xrange(4):
+    for t in range(4):
         all_data[t]+=data[t]
 
     out_fn=os.path.join(output_dir,fn)
     save_pkl(out_fn,all_data)
-    print 'done {} cost {} s'.format(fn,time.time()-bg)
+    print('train {} done cost {} s'.format(fn,time.time()-bg))
 
 
 def prepare_s3dis_test_single_file(pkl_dir, output_dir, fn):
@@ -141,7 +144,7 @@ def prepare_s3dis_test_single_file(pkl_dir, output_dir, fn):
     data = prepare_data(room_fn, False, False, False, False, False, False, 128)
     output_fn=os.path.join(output_dir,fn)
     save_pkl(output_fn,data)
-    print 'done {} cost {} s'.format(fn,time.time()-bg)
+    print('test {} done cost {} s'.format(fn,time.time()-bg))
 
 
 def prepare_dataset(pkl_dir,output_dir,num_cpus=4):
@@ -164,59 +167,16 @@ def prepare_dataset(pkl_dir,output_dir,num_cpus=4):
     for future in futures:
         future.result()
 
-
-def output_points(filename, pts, colors=None):
-    has_color = pts.shape[1] >= 6
-    with open(filename, 'w') as f:
-        for i, pt in enumerate(pts):
-            if colors is None:
-                if has_color:
-                    f.write('{} {} {} {} {} {}\n'.format(pt[0], pt[1], pt[2], int(pt[3]), int(pt[4]), int(pt[5])))
-                else:
-                    f.write('{} {} {}\n'.format(pt[0], pt[1], pt[2]))
-
-            else:
-                if colors.shape[0] == pts.shape[0]:
-                    f.write('{} {} {} {} {} {}\n'.format(pt[0], pt[1], pt[2], int(colors[i, 0]), int(colors[i, 1]),
-                                                         int(colors[i, 2])))
-                else:
-                    f.write('{} {} {} {} {} {}\n'.format(pt[0], pt[1], pt[2], int(colors[0]), int(colors[1]),
-                                                         int(colors[2])))
-
-
 if __name__=="__main__":
-    # points,labels=read_pkl('/home/pal/data/test/pkl/0_Area_1_conferenceRoom_1.pkl')
-    # print points.shape
-    # print labels.shape
-    # print np.min(points,axis=0),np.max(points,axis=0)
-    # print np.min(labels,axis=0),np.max(labels,axis=0)
-    # raw2pkl('/home/pal/data/Stanford3dDataset_v1.2_Aligned_Version','/home/pal/data/test')
-    # prepare_dataset('/home/liuyuan/data/test/pkl','/home/liuyuan/data/test/block_test_5',4)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--raw_dir', type=str, default='data/s3dis_raw', help='')
+    parser.add_argument('--pkl_dir', type=str, default='data/s3dis_pkl', help='')
+    parser.add_argument('--dataset_dir', type=str, default='data/s3dis_dataset', help='')
+    parser.add_argument('--num_cpus', type=int, default=4, help='')
+    args = parser.parse_args()
 
-    train_list,test_list=read_train_test_stems()
-    label_counts = np.zeros(13)
-    block_counts = 0
-    point_counts = []
-    f=open('tmp.txt','w')
-    for tfs in  train_list:
-        xyzs,rgbs,lbls,block_mins=read_pkl('/home/liuyuan/data/test/block_test_5/{}'.format(tfs))
-        block_counts+=len(xyzs)
-        for i in xrange(len(xyzs)):
-            # print xyzs[i].shape,rgbs[i].shape,lbls[i].shape
-            # print np.min(xyzs[i],axis=0),np.max(xyzs[i],axis=0)
-            # print np.min(rgbs[i],axis=0),np.max(rgbs[i],axis=0)
-            hist,_=np.histogram(lbls[i],np.arange(14))
-            label_counts+=hist
-            point_counts.append(len(xyzs[i]))
-
-        f.write('{} {}\n'.format(tfs,len(xyzs)))
-
-    f.close()
-
-    print block_counts
-    print label_counts
-    print np.histogram(point_counts)
-
-    # xyzs, rgbs, lbls, block_mins = read_pkl('/home/liuyuan/data/test/block_test_5/{}'.format('1_Area_1_conferenceRoom_2.pkl'))
-    # for i in xrange(len(xyzs)):
-    #     output_points('test_result/{}.txt'.format(i),xyzs[i]+block_mins[i],rgbs[i]*127+128)
+    # step 1: read raw data and write data as .pkl files
+    raw2pkl(args.raw_dir,args.pkl_dir)
+    # step 2: prepare training and testing data
+    prepare_dataset(args.pkl_dir,args.dataset_dir,args.num_cpus)
