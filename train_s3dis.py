@@ -41,10 +41,24 @@ train_weights=np.asarray(train_weights)
 
 
 def tower_loss(xyzs, feats, labels, is_training, reuse=False):
+    '''
+
+    :param xyzs:  placeholder: [n,3] float32
+    :param feats: placeholder: [n,f] float32
+    :param labels: placeholder: [n,] int64
+    :param is_training:  bool
+    :param reuse: bool
+    :return:
+    '''
     with tf.variable_scope(tf.get_variable_scope(),reuse=reuse):
+        # split original point cloud into voxels and permutate point cloud
         xyzs, dxyzs, feats, labels, vlens, vbegs, vcens = \
             points_pooling_two_layers(xyzs,feats,labels,voxel_size1=0.15,voxel_size2=0.45)
+
+        # actual network structure
         global_feats, local_feats = pointnet_13_dilated_embed(xyzs, dxyzs, feats, vlens, vbegs, vcens, reuse)
+
+        # fully connected to classification
         logits=classifier(global_feats, local_feats, is_training, FLAGS.num_classes, reuse)
 
         # loss
@@ -57,7 +71,7 @@ def tower_loss(xyzs, feats, labels, is_training, reuse=False):
 
     tf.summary.scalar(loss.op.name,loss)
 
-    return loss,logits,labels
+    return loss, logits, labels
 
 
 def train_ops(xyzs, feats, labels, is_training, epoch_batch_num):
