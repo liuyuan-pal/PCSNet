@@ -4,12 +4,12 @@ import math
 
 def save_pkl(filename,obj):
     with open(filename,'wb') as f:
-        pickle.dump(obj,f,protocol=2)
+        pickle.dump(obj,f)
 
 
 def read_pkl(filename):
     with open(filename,'rb') as f:
-        obj=pickle.load(f)
+        obj=pickle.load(f,encoding='latin1')
     return obj
 
 def flip(points,axis=0):

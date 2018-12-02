@@ -34,10 +34,10 @@ class Provider:
 
     def require_data(self,require_size):
         data_len=len(self.cur_data)
-        cur_batch=[[] for _ in xrange(data_len)]
+        cur_batch=[[] for _ in range(data_len)]
         actual_size=min(require_size+self.cur_data_pos,self.cur_data_len)-self.cur_data_pos
         indices=self.cur_data_indices[self.cur_data_pos:self.cur_data_pos+actual_size]
-        for i in xrange(data_len):
+        for i in range(data_len):
             for idx in indices:
                 cur_batch[i].append(self.cur_data[i][idx])
         self.cur_data_pos+=actual_size
@@ -55,14 +55,14 @@ class Provider:
         while left_size>0:
             if not self.read_data(): break
             new_batch,left_size=self.require_data(left_size)
-            for i in xrange(len(self.cur_data)):
+            for i in range(len(self.cur_data)):
                 cur_batch[i]+=new_batch[i]
 
         # randomly sample to batch size
         if len(cur_batch[0])<self.batch_size:
             indices=np.random.choice(len(cur_batch[0]),self.batch_size)
-            new_batch=[[] for _ in xrange(len(self.cur_data))]
-            for i in xrange(len(self.cur_data)):
+            new_batch=[[] for _ in range(len(self.cur_data))]
+            for i in range(len(self.cur_data)):
                 for idx in indices:
                     new_batch[i].append(cur_batch[i][idx])
 
@@ -78,11 +78,11 @@ def test_provider():
     def read_fn(num):
         return [range(num),range(num)]
     nums=np.random.randint(1,4,5)
-    print nums
+    print(nums)
     provider=Provider(nums,4,read_fn,False)
 
     for val in provider:
-        print val
+        print(val)
 
 if __name__=="__main__":
     test_provider()

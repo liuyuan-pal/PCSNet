@@ -201,7 +201,7 @@ def test_one_epoch(ops,pls,sess,saver,testset,epoch_num,feed_dict):
     saver.save(sess,checkpoint_path)
     # else:
     #     names=get_class_names()
-    #     for i in xrange(len(names)):
+    #     for i in range(len(names)):
     #         print '{} iou {} acc {}'.format(names[i],iou[i],acc[i])
 
 
@@ -209,7 +209,7 @@ def fill_feed_dict(feed_in, feed_dict, pls, batch_size):
     cxyzs, rgbs, _, lbls, block_mins = feed_in
     batch_pt_num=0
     batch_labels=[]
-    for k in xrange(batch_size):
+    for k in range(batch_size):
         feed_dict[pls['xyzs'][k]]=cxyzs[k]
         feed_dict[pls['feats'][k]]=rgbs[k]
         feed_dict[pls['lbls'][k]]=lbls[k]
@@ -223,7 +223,7 @@ def fill_feed_dict(feed_in, feed_dict, pls, batch_size):
 def build_placeholder(batch_size):
     pls = {}
     pls['xyzs'], pls['feats'], pls['lbls']=[],[],[]
-    for i in xrange(batch_size):
+    for i in range(batch_size):
         pls['xyzs'].append(tf.placeholder(tf.float32,[None,3],'xyzs{}'.format(i)))
         pls['feats'].append(tf.placeholder(tf.float32,[None,3],'feats{}'.format(i)))
         pls['lbls'].append(tf.placeholder(tf.int32,[None],'lbls{}'.format(i)))
@@ -278,7 +278,7 @@ def train():
 
     summary_writer = tf.summary.FileWriter(FLAGS.train_dir,graph=sess.graph)
 
-    for epoch_num in xrange(FLAGS.restore_epoch,FLAGS.train_epoch_num):
+    for epoch_num in range(FLAGS.restore_epoch,FLAGS.train_epoch_num):
         train_one_epoch(ops,pls,sess,summary_writer,train_provider,epoch_num,feed_dict)
         test_one_epoch(ops,pls,sess,saver,test_provider,epoch_num,feed_dict)
 

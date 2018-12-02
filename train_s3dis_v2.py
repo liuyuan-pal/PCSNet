@@ -45,6 +45,7 @@ def tower_loss(xyzs, feats, labels, is_training, reuse=False):
         xyzs, dxyzs, feats, labels, vlens, vbegs, vcens = \
             points_pooling_two_layers(xyzs,feats,labels,voxel_size1=0.15,voxel_size2=0.45)
         global_feats, local_feats = pointnet_13_dilated_embed(xyzs, dxyzs, feats, vlens, vbegs, vcens, reuse)
+        print(global_feats.shape,local_feats.shape)
         logits=classifier(global_feats, local_feats, is_training, FLAGS.num_classes, reuse)
 
         # loss

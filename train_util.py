@@ -54,7 +54,7 @@ def log_str(message,filename,print_message=True):
     with open(filename,'a') as f:
         f.write(message+'\n')
     if print_message:
-        print message
+        print(message)
 
 
 def average_gradients(tower_grads):
