@@ -27,6 +27,7 @@ cd data/model/s3dis
 unzip ../../s3dis.zip
 
 cd ../.. # move to root dir
-python test_model
-
+python test_model.py
 ```
+
+The result is written in the "result/*.txt".
